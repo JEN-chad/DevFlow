@@ -16,16 +16,21 @@ import {
   AlertCircle,
   Loader2,
   Trash2,
-  Edit2
+  Edit2,
+  Zap,
+  Target,
+  ChevronRight
 } from 'lucide-react';
+import { SprintStatusBadge } from '../components/ui/Badge';
+import { useToast, ToastContainer } from '../components/ui/Toast';
 
 export const SprintsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toasts, removeToast, toast } = useToast();
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [toast, setToast] = useState(null);
 
   // Form setup for creating/editing sprint
   const {
@@ -44,8 +49,7 @@ export const SprintsPage = () => {
   });
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    toast[type === 'error' ? 'error' : 'success'](message);
   };
 
   // Fetch all projects user has access to
@@ -163,64 +167,42 @@ export const SprintsPage = () => {
 
   return (
     <div className="space-y-6 relative animate-fadeIn">
-      {/* Toast Alert */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4.5 py-3 rounded-xl shadow-2xl border transition-all duration-300 ${
-            toast.type === 'error'
-              ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-              : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50 text-green-600 dark:text-green-400'
-          }`}
-        >
-          {toast.type === 'error' ? <AlertCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
-          <span className="text-sm font-semibold">{toast.message}</span>
-        </div>
-      )}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-            Agile Sprints
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Agile Sprints</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Plan timelines, manage goals, and measure velocity burndown statistics.
           </p>
         </div>
 
         {/* Project Selector & Actions */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase hidden md:inline">Project:</span>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              disabled={isProjectsLoading}
-              className="px-3.5 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
-            >
-              {isProjectsLoading ? (
-                <option>Loading workspaces...</option>
-              ) : projects?.length === 0 ? (
-                <option>No projects found</option>
-              ) : (
-                projects?.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            disabled={isProjectsLoading}
+            className="input-base font-semibold max-w-xs"
+          >
+            {isProjectsLoading ? (
+              <option>Loading workspaces...</option>
+            ) : projects?.length === 0 ? (
+              <option>No projects found</option>
+            ) : (
+              projects?.map((p) => (
+                <option key={p._id} value={p._id}>{p.name}</option>
+              ))
+            )}
+          </select>
 
           <button
-            onClick={() => {
-              reset();
-              setShowCreateModal(true);
-            }}
+            onClick={() => { reset(); setShowCreateModal(true); }}
             disabled={!selectedProjectId || !canManageSprints}
-            className="flex items-center gap-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 active:bg-primary-700 text-white px-4.5 py-2 text-sm font-semibold shadow-md shadow-primary-600/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 text-sm font-bold shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 whitespace-nowrap"
           >
-            <Plus className="h-4.5 w-4.5" />
+            <Plus className="h-4 w-4" />
             Plan Sprint
           </button>
         </div>
@@ -264,144 +246,153 @@ export const SprintsPage = () => {
         <div className="space-y-8">
           {/* 1. Active Sprints Section */}
           <div className="space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Active Sprint
-            </h2>
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500">
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+              </span>
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Active Sprint</h2>
+            </div>
             {activeSprints.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800/80 p-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-100/10">
-                No currently active sprint. Start a planned sprint below.
+              <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+                No active sprint. Start a planned sprint to begin tracking progress.
               </div>
             ) : (
-              activeSprints.map((sprint) => (
-                <div
-                  key={sprint._id}
-                  className="glass-panel border-l-4 border-l-primary-600 border border-slate-250 dark:border-slate-800 rounded-xl p-5.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{sprint.name}</h3>
-                      <span className="text-[10px] font-bold bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full uppercase">
-                        ACTIVE
-                      </span>
-                    </div>
-                    {sprint.goal && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Goal: <span className="italic">{sprint.goal}</span>
-                      </p>
-                    )}
-                    <div className="flex gap-4.5 text-[11px] text-slate-400 font-semibold">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
+              activeSprints.map((sprint) => {
+                const totalDays = Math.max(1, Math.ceil((new Date(sprint.endDate) - new Date(sprint.startDate)) / 86400000));
+                const elapsed = Math.ceil((new Date() - new Date(sprint.startDate)) / 86400000);
+                const progress = Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)));
+                const remaining = Math.max(0, totalDays - elapsed);
 
-                  <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                    <Link
-                      to={`/dashboard/sprints/${sprint._id}/dashboard`}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-350 transition-colors"
-                    >
-                      Sprint Dashboard
-                    </Link>
-                    <Link
-                      to={`/dashboard/sprints/${sprint._id}`}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-350 transition-colors"
-                    >
-                      View Board Tasks
-                    </Link>
-                    {canManageSprints && (
-                      <button
-                        onClick={() => handleCompleteSprint(sprint._id)}
-                        disabled={completeSprintMutation.isPending}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-green-650 hover:bg-green-600 text-white shadow-md shadow-green-600/10 transition-colors"
-                      >
-                        {completeSprintMutation.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-3.5 w-3.5" />
+                return (
+                  <div key={sprint._id}
+                    className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-gradient-to-br from-emerald-50/60 via-white to-white dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900 p-6 shadow-md"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <SprintStatusBadge status="ACTIVE" />
+                          <h3 className="text-lg font-black text-slate-900 dark:text-white">{sprint.name}</h3>
+                        </div>
+                        {sprint.goal && (
+                          <div className="flex items-start gap-2">
+                            <Target className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                            <p className="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">{sprint.goal}</p>
+                          </div>
                         )}
-                        Complete Sprint
-                      </button>
-                    )}
+                        <div className="flex items-center gap-4 text-xs text-slate-400 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {new Date(sprint.startDate).toLocaleDateString()} → {new Date(sprint.endDate).toLocaleDateString()}
+                          </span>
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                            <Clock className="h-3.5 w-3.5" />
+                            {remaining}d remaining
+                          </span>
+                        </div>
+                        {/* Progress */}
+                        <div className="space-y-1 pt-1">
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-400">
+                            <span>Sprint Progress</span>
+                            <span>{progress}%</span>
+                          </div>
+                          <div className="progress-track">
+                            <div className="progress-fill bg-emerald-500" style={{ width: `${progress}%` }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-end">
+                        <Link to={`/dashboard/sprints/${sprint._id}/dashboard`}
+                          className="px-3.5 py-2 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-all">
+                          Sprint Dashboard
+                        </Link>
+                        <Link to={`/dashboard/sprints/${sprint._id}`}
+                          className="px-3.5 py-2 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-all">
+                          View Tasks
+                        </Link>
+                        {canManageSprints && (
+                          <button
+                            onClick={() => handleCompleteSprint(sprint._id)}
+                            disabled={completeSprintMutation.isPending}
+                            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50">
+                            {completeSprintMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                            Complete Sprint
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           {/* 2. Planned Sprints Section */}
           <div className="space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Planned Backlog Sprints ({plannedSprints.length})
-            </h2>
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-400 dark:bg-slate-600">
+                <Calendar className="h-2.5 w-2.5 text-white" />
+              </span>
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Planned ({plannedSprints.length})</h2>
+            </div>
             {plannedSprints.length === 0 ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800/80 p-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-100/10">
-                No planned sprints found. Click "Plan Sprint" to initialize one.
+              <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+                No planned sprints. Click "Plan Sprint" to initialize one.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {plannedSprints.map((sprint) => (
-                  <div
-                    key={sprint._id}
-                    className="glass-panel border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between gap-5 group hover:border-primary-500/40 transition-all duration-300"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary-500 transition-colors">
-                          {sprint.name}
-                        </h3>
-                        <span className="text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded uppercase">
-                          PLANNED
-                        </span>
-                      </div>
-                      {sprint.goal && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2rem]">
-                          {sprint.goal}
-                        </p>
-                      )}
-                      <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-200/50 dark:border-slate-850 flex items-center justify-between">
-                      {/* Delete Action */}
-                      <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {plannedSprints.map((sprint) => {
+                  const totalDays = Math.max(1, Math.ceil((new Date(sprint.endDate) - new Date(sprint.startDate)) / 86400000));
+                  return (
+                    <div key={sprint._id}
+                      className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col gap-4 hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <SprintStatusBadge status="PLANNED" />
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                            {sprint.name}
+                          </h3>
+                          {sprint.goal && (
+                            <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{sprint.goal}</p>
+                          )}
+                        </div>
                         {canManageSprints && (
-                          <button
-                            onClick={() => handleDeleteSprint(sprint._id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-650 hover:bg-red-500/5 transition-colors"
-                            title="Delete Sprint"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                          <button onClick={() => handleDeleteSprint(sprint._id)}
+                            className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-all shrink-0">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
 
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/dashboard/sprints/${sprint._id}`}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-350 transition-colors"
-                        >
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        {new Date(sprint.startDate).toLocaleDateString()} – {new Date(sprint.endDate).toLocaleDateString()}
+                        <span className="ml-auto text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">
+                          {totalDays}d
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <Link to={`/dashboard/sprints/${sprint._id}`}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
                           Details & Tasks
                         </Link>
                         {canManageSprints && (
                           <button
                             onClick={() => handleStartSprint(sprint._id)}
                             disabled={startSprintMutation.isPending}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-primary-600 hover:bg-primary-500 text-white shadow-md shadow-primary-600/10 transition-colors"
-                          >
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 disabled:opacity-50 transition-all">
                             <Play className="h-3 w-3 fill-current" />
-                            Start
+                            Start Sprint
                           </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

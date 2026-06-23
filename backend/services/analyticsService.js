@@ -3,7 +3,7 @@ import Task from '../models/Task.js';
 import Sprint from '../models/Sprint.js';
 import Activity from '../models/Activity.js';
 import Project from '../models/Project.js';
-import User from '../models/User.js';
+import { User } from '../models/User.js';
 
 /**
  * Get unified dashboard analytics

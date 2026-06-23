@@ -22,3 +22,4 @@ const GitHubIntegrationSchema = new mongoose.Schema({
 });
 
 export const GitHubIntegration = mongoose.model('GitHubIntegration', GitHubIntegrationSchema);
+export default GitHubIntegration;

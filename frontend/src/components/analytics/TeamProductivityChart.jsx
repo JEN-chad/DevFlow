@@ -1,102 +1,93 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
 
-const DEMO_DATA = [
-  { username: 'Alex', completedTasks: 8, storyPointsDelivered: 24 },
-  { username: 'Taylor', completedTasks: 6, storyPointsDelivered: 18 },
-  { username: 'Jordan', completedTasks: 5, storyPointsDelivered: 15 },
-  { username: 'Morgan', completedTasks: 3, storyPointsDelivered: 10 },
+const BAR_COLORS = [
+  '#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444',
+  '#06B6D4', '#EC4899', '#14B8A6', '#F97316', '#6366F1',
 ];
 
-const CustomTooltip = ({ active, payload }) => {
+const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const d = payload[0].payload;
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 text-xs">
-        <p className="font-bold text-slate-850 dark:text-slate-200">{data.username}</p>
-        <p className="mt-1 text-primary-500 font-semibold">Completed Tasks: {data.completedTasks}</p>
-        <p className="text-emerald-500 font-semibold">Story Points: {data.storyPointsDelivered}</p>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl text-xs min-w-[150px]">
+        <p className="font-black text-slate-900 dark:text-white mb-2">{d.username}</p>
+        <div className="space-y-1">
+          <div className="flex justify-between gap-4">
+            <span className="text-slate-500">Tasks Done</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{d.completedTasks}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-slate-500">Story Points</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400">{d.storyPointsDelivered} SP</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-slate-500">Commits</span>
+            <span className="font-bold text-violet-600 dark:text-violet-400">{d.commitsContributed}</span>
+          </div>
+          <div className="flex justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <span className="text-slate-500 font-bold">Score</span>
+            <span className="font-black text-slate-900 dark:text-white">{d.score}</span>
+          </div>
+        </div>
       </div>
     );
   }
   return null;
 };
 
-export const TeamProductivityChart = ({ data = [], loading = false }) => {
-  const hasData = data && data.length > 0;
-  const chartData = hasData ? data : DEMO_DATA;
-
-  if (loading) {
+const TeamProductivityChart = ({ data = [] }) => {
+  if (!data || data.length === 0) {
     return (
-      <div className="h-64 w-full flex items-center justify-center">
-        <div className="space-y-4 w-full px-4">
-          <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-1/4"></div>
-          <div className="flex items-end gap-3 h-36">
-            <div className="h-16 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse"></div>
-            <div className="h-28 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse"></div>
-            <div className="h-24 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse"></div>
-            <div className="h-12 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse"></div>
-          </div>
-        </div>
+      <div className="flex-1 flex items-center justify-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl min-h-[180px]">
+        No team productivity data available.
       </div>
     );
   }
 
+  const sorted = [...data].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 8);
+
   return (
-    <div className="relative w-full h-64 flex flex-col justify-between">
-      {!hasData && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-950/40 backdrop-blur-[1px] z-10 rounded-xl">
-          <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-[10px] font-semibold tracking-wider text-slate-500 uppercase border border-slate-200 dark:border-slate-700 shadow-sm">
-            Demo State
-          </span>
-        </div>
-      )}
-      <div className="flex-1 w-full h-full min-h-[220px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.1)" />
-            <XAxis
-              dataKey="username"
-              stroke="#94a3b8"
-              fontSize={10}
-              tickLine={false}
-            />
-            <YAxis
-              stroke="#94a3b8"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              verticalAlign="top"
-              height={36}
-              iconType="circle"
-              iconSize={8}
-              formatter={(value) => (
-                <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 capitalize">
-                  {value.replace(/([A-Z])/g, ' $1').trim()}
-                </span>
-              )}
-            />
-            <Bar
-              dataKey="completedTasks"
-              fill="#2563EB"
-              radius={[4, 4, 0, 0]}
-              opacity={hasData ? 1 : 0.25}
-            />
-            <Bar
-              dataKey="storyPointsDelivered"
-              fill="#10B981"
-              radius={[4, 4, 0, 0]}
-              opacity={hasData ? 1 : 0.25}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+    <div className="flex-1 min-h-[180px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={sorted}
+          margin={{ top: 5, right: 5, left: -25, bottom: 5 }}
+          barSize={28}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" vertical={false} />
+          <XAxis
+            dataKey="username"
+            stroke="#94a3b8"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            dy={4}
+          />
+          <YAxis
+            stroke="#94a3b8"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            allowDecimals={false}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.06)' }} />
+          <Bar dataKey="score" radius={[5, 5, 0, 0]}>
+            {sorted.map((entry, index) => (
+              <Cell key={index} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 };

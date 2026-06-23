@@ -22,11 +22,11 @@ import {
 } from 'lucide-react';
 
 const COLUMNS = [
-  { id: 'BACKLOG', name: 'Backlog', bgHeader: 'bg-slate-100 dark:bg-slate-900', border: 'border-slate-300 dark:border-slate-800' },
-  { id: 'TODO', name: 'To Do', bgHeader: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-900/50' },
-  { id: 'IN_PROGRESS', name: 'In Progress', bgHeader: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-900/50' },
-  { id: 'REVIEW', name: 'Review', bgHeader: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-purple-200 dark:border-purple-900/50' },
-  { id: 'DONE', name: 'Done', bgHeader: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-900/50' },
+  { id: 'BACKLOG',     name: 'Backlog',     accent: '#94A3B8', dot: 'bg-slate-400'  },
+  { id: 'TODO',        name: 'To Do',       accent: '#3B82F6', dot: 'bg-blue-500'   },
+  { id: 'IN_PROGRESS', name: 'In Progress', accent: '#F59E0B', dot: 'bg-amber-500'  },
+  { id: 'REVIEW',      name: 'Review',      accent: '#8B5CF6', dot: 'bg-violet-500' },
+  { id: 'DONE',        name: 'Done',        accent: '#10B981', dot: 'bg-emerald-500'},
 ];
 
 export const TasksPage = () => {
@@ -363,18 +363,28 @@ export const TasksPage = () => {
     localStorage.setItem('activeSprintId', val);
   };
 
-  // Render priority badge helpers
+  // Priority badge config
+  const PRIORITY_STRIPE = {
+    CRITICAL: 'border-l-red-500',
+    HIGH:     'border-l-orange-500',
+    MEDIUM:   'border-l-amber-500',
+    LOW:      'border-l-slate-300 dark:border-l-slate-700',
+  };
+
   const getPriorityBadge = (priority) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-red-500/10 text-red-500">Critical</span>;
-      case 'HIGH':
-        return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-orange-500/10 text-orange-500">High</span>;
-      case 'MEDIUM':
-        return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-yellow-500/15 text-yellow-600 dark:text-yellow-450">Medium</span>;
-      default:
-        return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">Low</span>;
-    }
+    const configs = {
+      CRITICAL: { label: 'Critical', className: 'priority-critical' },
+      HIGH:     { label: 'High',     className: 'priority-high'     },
+      MEDIUM:   { label: 'Medium',   className: 'priority-medium'   },
+      LOW:      { label: 'Low',      className: 'priority-low'      },
+    };
+    const c = configs[priority] || configs.LOW;
+    return (
+      <span className={c.className}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+        {c.label}
+      </span>
+    );
   };
 
   // Group tasks by column
@@ -445,22 +455,21 @@ export const TasksPage = () => {
       </div>
 
       {/* Filter Row */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center p-4.5 glass-panel rounded-xl border border-slate-200 dark:border-slate-800/80">
-        <div className="w-full sm:w-64 flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Workspace</label>
+      <div className="flex flex-col sm:flex-row gap-3 items-end p-4 rounded-xl border"
+        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+        <div className="flex-1 min-w-0">
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Workspace</label>
           <select
             value={selectedProjectId}
             onChange={handleProjectChange}
             disabled={isProjectsLoading}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+            className="input-base font-semibold"
           >
             {isProjectsLoading ? (
               <option>Loading projects...</option>
             ) : projects && projects.length > 0 ? (
               projects.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name}
-                </option>
+                <option key={p._id} value={p._id}>{p.name}</option>
               ))
             ) : (
               <option value="">No projects available</option>
@@ -468,26 +477,38 @@ export const TasksPage = () => {
           </select>
         </div>
 
-        <div className="w-full sm:w-64 flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sprint Scope</label>
+        <div className="flex-1 min-w-0">
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Sprint Scope</label>
           <select
             value={selectedSprintId}
             onChange={handleSprintChange}
             disabled={isSprintsLoading || !selectedProjectId}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-955 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+            className="input-base font-semibold"
           >
             <option value="all">All Sprints & Backlog</option>
             <option value="">Backlog Only (No Sprint)</option>
             {sprints && sprints.length > 0 && (
               <optgroup label="Sprints">
                 {sprints.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name} ({s.status})
-                  </option>
+                  <option key={s._id} value={s._id}>{s.name} ({s.status})</option>
                 ))}
               </optgroup>
             )}
           </select>
+        </div>
+
+        {/* Summary pills */}
+        <div className="flex items-center gap-2 pb-0.5 shrink-0">
+          {tasks && (
+            <>
+              <span className="flex items-center gap-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1.5">
+                {tasks.filter(t => t.status !== 'DONE').length} open
+              </span>
+              <span className="flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-bold px-2.5 py-1.5">
+                {tasks.filter(t => t.status === 'DONE').length} done
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -534,19 +555,21 @@ export const TasksPage = () => {
               return (
                 <div
                   key={column.id}
-                  className={`glass-panel border ${column.border} rounded-xl overflow-hidden flex flex-col max-h-[75vh] w-full min-w-[220px]`}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col max-h-[75vh] w-full min-w-[220px] shadow-sm"
+                  style={{ borderTop: `3px solid ${column.accent}` }}
                 >
                   {/* Column Header */}
-                  <div className={`p-4 ${column.bgHeader} border-b border-slate-200/50 dark:border-slate-850 flex items-center justify-between shrink-0`}>
+                  <div className="px-4 pt-3.5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-205">{column.name}</span>
-                      <span className="inline-flex h-5 items-center justify-center rounded-full bg-slate-200/70 dark:bg-slate-800 text-[10px] font-extrabold px-2 text-slate-600 dark:text-slate-400">
+                      <span className={`h-2 w-2 rounded-full ${column.dot}`} />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{column.name}</span>
+                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black px-1.5 text-slate-600 dark:text-slate-400">
                         {colTasks.length}
                       </span>
                     </div>
                     {totalStoryPoints > 0 && (
-                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-200/40 dark:bg-slate-850 px-2 py-0.5 rounded-md" title="Total story points">
-                        {totalStoryPoints} SP
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                        {totalStoryPoints}SP
                       </span>
                     )}
                   </div>
@@ -557,13 +580,16 @@ export const TasksPage = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`p-3 space-y-3 flex-1 overflow-y-auto min-h-[300px] transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-slate-100/40 dark:bg-slate-900/10' : ''
+                        className={`p-3 space-y-2.5 flex-1 overflow-y-auto min-h-[300px] transition-colors rounded-b-xl ${
+                          snapshot.isDraggingOver ? 'kanban-drop-zone-active bg-blue-50/30 dark:bg-blue-950/10' : ''
                         }`}
                       >
                         {colTasks.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-center p-6 border border-dashed border-slate-200 dark:border-slate-850/50 rounded-lg text-[10px] text-slate-400 dark:text-slate-600 min-h-[100px]">
-                            Drop tickets here
+                          <div className="h-full flex items-center justify-center text-center p-6 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-[10px] text-slate-400 dark:text-slate-600 min-h-[120px]">
+                            <div>
+                              <div className="text-lg mb-1">+</div>
+                              Drop tasks here
+                            </div>
                           </div>
                         ) : (
                           colTasks.map((task, index) => (
@@ -574,61 +600,60 @@ export const TasksPage = () => {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   onClick={() => handleTaskClick(task._id)}
-                                  className={`p-3.5 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-primary-500/50 dark:hover:border-primary-500/40 rounded-xl flex flex-col justify-between cursor-grab active:cursor-grabbing hover:shadow-md dark:hover:shadow-primary-950/5 transition-all group ${
-                                    snapshot.isDragging ? 'shadow-2xl border-primary-500 ring-2 ring-primary-500/20' : ''
+                                  className={`relative pl-3 pr-3 pt-3 pb-2.5 bg-white dark:bg-slate-900 border-l-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col cursor-grab active:cursor-grabbing transition-all duration-150 group ${
+                                    PRIORITY_STRIPE[task.priority] || 'border-l-slate-300'
+                                  } ${
+                                    snapshot.isDragging
+                                      ? 'task-card-dragging'
+                                      : 'hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-900/50 hover:-translate-y-0.5'
                                   }`}
                                 >
-                                  <div>
-                                    {/* Task Badges & Actions */}
-                                    <div className="flex items-center justify-between gap-2 mb-2">
-                                      {getPriorityBadge(task.priority)}
-                                      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
-                                        {task.storyPoints > 0 && (
-                                          <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-850 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-450 border border-slate-200/50 dark:border-slate-800">
-                                            {task.storyPoints} SP
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Task Title */}
-                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 leading-relaxed group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                      {task.title}
-                                    </h4>
-
-                                    {/* Task Description snippet */}
-                                    {task.description && (
-                                      <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 font-medium">
-                                        {task.description}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  {/* Task Footer details */}
-                                  <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 flex items-center justify-between">
-                                    <div className="flex items-center gap-1 text-[9px] text-slate-400 dark:text-slate-500 font-semibold">
-                                      <Layers className="h-3 w-3" />
-                                      {task.sprintId ? 'Sprint Mapped' : 'Backlog'}
-                                    </div>
-
-                                    {/* Assignee Avatar */}
-                                    <div className="flex items-center gap-1">
+                                  {/* Top row: priority badge + assignee */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    {getPriorityBadge(task.priority)}
+                                    <div className="flex items-center gap-1.5">
+                                      {task.storyPoints > 0 && (
+                                        <span className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400 tabular-nums">
+                                          {task.storyPoints}
+                                        </span>
+                                      )}
                                       {task.assignee?.avatar ? (
-                                        <img
-                                          src={task.assignee.avatar}
-                                          alt={task.assignee.username}
-                                          className="h-5 w-5 rounded-full object-cover border border-slate-100 dark:border-slate-800"
+                                        <img src={task.assignee.avatar} alt={task.assignee.username}
+                                          className="h-5 w-5 rounded-full object-cover ring-2 ring-white dark:ring-slate-900"
                                           title={`Assigned to ${task.assignee.username}`}
                                         />
                                       ) : (
-                                        <div
-                                          className="h-5 w-5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-850 flex items-center justify-center text-[8px] font-bold text-slate-500"
-                                          title={task.assignee?.username ? `Assigned to ${task.assignee.username}` : 'Unassigned'}
-                                        >
-                                          {task.assignee?.username?.substring(0, 2).toUpperCase() || <User className="h-3 w-3 text-slate-400" />}
+                                        <div className="h-5 w-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-500 dark:text-slate-400"
+                                          title={task.assignee?.username ? `Assigned: ${task.assignee.username}` : 'Unassigned'}>
+                                          {task.assignee?.username?.substring(0, 2).toUpperCase() || <User className="h-3 w-3" />}
                                         </div>
                                       )}
                                     </div>
+                                  </div>
+
+                                  {/* Task Title */}
+                                  <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug mb-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {task.title}
+                                  </h4>
+
+                                  {/* Description snippet */}
+                                  {task.description && (
+                                    <p className="text-[10px] text-slate-400 line-clamp-1 leading-relaxed">
+                                      {task.description}
+                                    </p>
+                                  )}
+
+                                  {/* Footer */}
+                                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                    <div className="flex items-center gap-1 text-[9px] text-slate-400 dark:text-slate-500 font-semibold">
+                                      <Layers className="h-3 w-3 shrink-0" />
+                                      {task.sprintId ? 'In Sprint' : 'Backlog'}
+                                    </div>
+                                    {task.githubIssueNumber && (
+                                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                                        #{task.githubIssueNumber}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               )}

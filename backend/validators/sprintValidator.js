@@ -2,10 +2,11 @@
  * Validation middleware for creating a sprint
  */
 export const validateCreateSprint = (req, res, next) => {
-  const { projectId, name, startDate, endDate, goal } = req.body;
+  const projectId = req.params.projectId || req.body.projectId;
+  const { name, startDate, endDate, goal } = req.body;
   const errors = {};
 
-  if (!projectId || projectId.trim() === '') {
+  if (!projectId || (typeof projectId === 'string' && projectId.trim() === '')) {
     errors.projectId = 'Project ID is required';
   }
 
