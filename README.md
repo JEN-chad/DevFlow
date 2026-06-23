@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🚀 DevFlow</h1>
+  <h1> DevFlow</h1>
   <p><strong>GitHub Integrated Sprint & Project Management System</strong></p>
   <p>A modern, real-time, collaborative project management platform designed specifically for software development teams.</p>
 
