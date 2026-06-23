@@ -500,6 +500,3 @@ This section helps developers prepare to defend this architecture in interviews.
 
 <hr/>
 
-<div align="center">
-  <i>Built with passion by a Senior Full Stack Engineer.</i>
-</div>
