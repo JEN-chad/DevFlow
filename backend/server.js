@@ -1,11 +1,11 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
 
+import { config } from './config/env.js';
 import { connectDB } from './config/db.js';
 import { configurePassport } from './config/passport.js';
 import { notFoundHandler, globalErrorHandler } from './middlewares/errorMiddleware.js';
@@ -25,9 +25,6 @@ import { sanitizeInput } from './middlewares/sanitizeMiddleware.js';
 import { createServer } from 'http';
 import { initSocket } from './config/socket.js';
 
-// Load environment variables
-dotenv.config();
-
 // Create Express app
 const app = express();
 
@@ -43,7 +40,7 @@ app.use(helmet());
 // 2. CORS setup allowing cookies
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: config.clientUrl,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -66,8 +63,8 @@ app.use(cookieParser());
 
 // 5. Rate Limiting for APIs
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: config.rateLimitWindow,
+  max: config.rateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -126,7 +123,7 @@ const server = createServer(app);
 initSocket(server);
 
 // Start Server
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
 });

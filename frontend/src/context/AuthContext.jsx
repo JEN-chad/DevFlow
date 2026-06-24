@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api, { setAccessToken } from '../services/api';
+import { API_URL } from '../config/env';
 
 const AuthContext = createContext(null);
 
@@ -28,8 +29,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginWithGitHub = () => {
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    window.location.href = `${apiBaseUrl}/auth/github`;
+    window.location.href = `${API_URL}/auth/github`;
   };
 
   const logout = async () => {

@@ -1,62 +1,6 @@
-import axios from 'axios';
+import api, { setAccessToken, getAccessToken } from '../lib/api';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  withCredentials: true, // Send credentials (cookies) with requests
-});
-
-let accessToken = '';
-
-export const setAccessToken = (token) => {
-  accessToken = token;
-};
-
-export const getAccessToken = () => {
-  return accessToken;
-};
-
-// Request interceptor: Attach access token if present
-api.interceptors.request.use(
-  (config) => {
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor: Transparently handle token refresh on 401
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // Check if error is 401 Unauthorized and we haven't retried this request yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const refreshUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh`;
-        const response = await axios.post(refreshUrl, {}, { withCredentials: true });
-
-        const { accessToken: newAccessToken } = response.data;
-        setAccessToken(newAccessToken);
-
-        // Update Authorization header on original request and retry
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails (e.g. cookie expired), clear access token
-        setAccessToken('');
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
+export { setAccessToken, getAccessToken };
 
 // Projects API Services
 export const projectService = {

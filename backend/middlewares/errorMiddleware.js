@@ -1,10 +1,12 @@
+import { config } from '../config/env.js';
+
 export const globalErrorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
   const correlationId = req.correlationId || 'N/A';
 
   console.error(`[Error] [ID:${correlationId}] ${statusCode} - ${message}`);
-  if (err.stack && process.env.NODE_ENV !== 'production') {
+  if (err.stack && config.nodeEnv !== 'production') {
     console.error(err.stack);
   }
 
@@ -12,7 +14,7 @@ export const globalErrorHandler = (err, req, res, next) => {
     success: false,
     message,
     correlationId,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+    stack: config.nodeEnv === 'production' ? null : err.stack,
   });
 };
 

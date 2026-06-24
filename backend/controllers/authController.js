@@ -1,5 +1,6 @@
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { User } from '../models/User.js';
+import { config } from '../config/env.js';
 
 export const handleGitHubCallback = async (req, res, next) => {
   try {
@@ -14,13 +15,13 @@ export const handleGitHubCallback = async (req, res, next) => {
     // 2. Set Refresh Token in secure, HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: config.nodeEnv === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // 3. Redirect to the frontend oauth-callback page
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = config.clientUrl;
     return res.redirect(`${frontendUrl}/oauth-callback`);
   } catch (error) {
     next(error);
@@ -71,7 +72,7 @@ export const logoutUser = async (req, res, next) => {
   try {
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: config.nodeEnv === 'production',
       sameSite: 'lax',
     });
     return res.status(200).json({

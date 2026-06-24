@@ -5,13 +5,14 @@ import { Activity } from '../models/Activity.js';
 import { Project } from '../models/Project.js';
 import { emitProjectEvent } from '../config/socket.js';
 import { createNotification } from '../services/notificationService.js';
+import { config } from '../config/env.js';
 
 /**
  * Middleware to verify GitHub Webhook Signature
  */
 export const verifyGithubSignature = (req, res, next) => {
   const signature = req.headers['x-hub-signature-256'];
-  const secret = process.env.GITHUB_WEBHOOK_SECRET || 'devflow_webhook_secret_key_123';
+  const secret = config.githubWebhookSecret;
 
   if (!signature) {
     console.warn('[Webhook] Rejected: x-hub-signature-256 header is missing');

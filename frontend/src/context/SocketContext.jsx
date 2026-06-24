@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { getAccessToken } from '../services/api';
+import { SOCKET_URL } from '../config/env';
 
 const SocketContext = createContext(null);
 
@@ -20,10 +21,9 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
     const token = getAccessToken();
 
-    const newSocket = io(socketUrl, {
+    const newSocket = io(SOCKET_URL, {
       auth: {
         token,
       },

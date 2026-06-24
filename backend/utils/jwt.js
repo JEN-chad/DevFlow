@@ -1,24 +1,25 @@
 import jwt from 'jsonwebtoken';
+import { config } from '../config/env.js';
 
 export const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRATION || '15m' }
+    config.jwtAccessSecret,
+    { expiresIn: config.jwtAccessExpiration }
   );
 };
 
 export const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user._id },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d' }
+    config.jwtRefreshSecret,
+    { expiresIn: config.jwtRefreshExpiration }
   );
 };
 
 export const verifyAccessToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    return jwt.verify(token, config.jwtAccessSecret);
   } catch (error) {
     return null;
   }
@@ -26,7 +27,7 @@ export const verifyAccessToken = (token) => {
 
 export const verifyRefreshToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    return jwt.verify(token, config.jwtRefreshSecret);
   } catch (error) {
     return null;
   }

@@ -2,14 +2,15 @@ import passport from 'passport';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import { User } from '../models/User.js';
 import { GitHubIntegration } from '../models/GitHubIntegration.js';
+import { config } from './env.js';
 
 export const configurePassport = () => {
   passport.use(
     new GitHubStrategy(
       {
-        clientID: process.env.GITHUB_CLIENT_ID || 'placeholder',
-        clientSecret: process.env.GITHUB_CLIENT_SECRET || 'placeholder',
-        callbackURL: process.env.GITHUB_CALLBACK_URL || 'http://localhost:5000/api/auth/github/callback',
+        clientID: config.githubClientId,
+        clientSecret: config.githubClientSecret,
+        callbackURL: config.githubCallbackUrl,
         scope: ['user:email', 'repo'],
         passReqToCallback: true,
       },

@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { User } from '../models/User.js';
+import { config } from './env.js';
 
 let io = null;
 const onlineUsers = new Map(); // projectId -> Map(userId -> { socketId, user })
@@ -8,7 +9,7 @@ const onlineUsers = new Map(); // projectId -> Map(userId -> { socketId, user })
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      origin: config.socketCorsOrigin,
       credentials: true,
       methods: ['GET', 'POST'],
     },
