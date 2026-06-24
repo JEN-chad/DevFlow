@@ -13,10 +13,11 @@ export const handleGitHubCallback = async (req, res, next) => {
     const refreshToken = generateRefreshToken(user);
 
     // 2. Set Refresh Token in secure, HttpOnly cookie
+    const isProduction = config.nodeEnv === 'production';
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -31,6 +32,11 @@ export const handleGitHubCallback = async (req, res, next) => {
 export const refreshAccessToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
+
+    // Temporary logs for diagnosing production authentication
+    console.log("Cookies:", req.cookies);
+    console.log("Headers:", req.headers);
+    console.log("Refresh Token:", refreshToken);
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -70,10 +76,11 @@ export const refreshAccessToken = async (req, res, next) => {
 
 export const logoutUser = async (req, res, next) => {
   try {
+    const isProduction = config.nodeEnv === 'production';
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
     });
     return res.status(200).json({
       success: true,
