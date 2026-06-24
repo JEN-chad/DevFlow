@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { sprintService, taskService, projectService } from '../services/api';
+import { useSocket } from '../context/SocketContext';
 import {
   Calendar,
   ChevronLeft,
@@ -17,7 +18,8 @@ import {
   Briefcase,
   TrendingUp,
   Tag,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 
 export const SprintDetailsPage = () => {
@@ -26,6 +28,8 @@ export const SprintDetailsPage = () => {
   const queryClient = useQueryClient();
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [toast, setToast] = useState(null);
+
+  const { socket, joinProject, leaveProject } = useSocket();
 
   // Form setup for tasks
   const {
@@ -41,6 +45,7 @@ export const SprintDetailsPage = () => {
       priority: 'MEDIUM',
       assignee: '',
       estimatedHours: 0,
+      storyPoints: 0,
     },
   });
 
@@ -64,6 +69,39 @@ export const SprintDetailsPage = () => {
   const stats = sprintData?.stats;
   const tasks = sprintData?.tasks || [];
   const projectId = sprint?.projectId;
+
+  // Socket room join / leave
+  useEffect(() => {
+    if (!projectId) return;
+    joinProject(projectId);
+    return () => {
+      leaveProject(projectId);
+    };
+  }, [projectId, joinProject, leaveProject]);
+
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRealtimeChange = () => {
+      queryClient.invalidateQueries({ queryKey: ['sprint', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    };
+
+    socket.on('task-created', handleRealtimeChange);
+    socket.on('task-updated', handleRealtimeChange);
+    socket.on('task-moved', handleRealtimeChange);
+    socket.on('task-deleted', handleRealtimeChange);
+    socket.on('sprint-updated', handleRealtimeChange);
+
+    return () => {
+      socket.off('task-created', handleRealtimeChange);
+      socket.off('task-updated', handleRealtimeChange);
+      socket.off('task-moved', handleRealtimeChange);
+      socket.off('task-deleted', handleRealtimeChange);
+      socket.off('sprint-updated', handleRealtimeChange);
+    };
+  }, [socket, id, queryClient]);
 
   // Fetch project details to get members list for assignment & role checks
   const { data: projectDetails, isLoading: isProjectLoading } = useQuery({
@@ -105,6 +143,8 @@ export const SprintDetailsPage = () => {
     mutationFn: (data) => taskService.createTask(projectId, { ...data, sprintId: id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sprint', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
       showToast('Task added to sprint successfully!', 'success');
       reset();
       setShowAddTaskModal(false);
@@ -118,6 +158,7 @@ export const SprintDetailsPage = () => {
     mutationFn: ({ taskId, status }) => taskService.updateTask(taskId, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sprint', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showToast('Task status updated!', 'success');
     },
     onError: (err) => {
@@ -129,6 +170,7 @@ export const SprintDetailsPage = () => {
     mutationFn: (taskId) => taskService.deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sprint', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showToast('Task deleted successfully!', 'success');
     },
     onError: (err) => {
@@ -150,6 +192,7 @@ export const SprintDetailsPage = () => {
   };
 
   const handleAddTask = (data) => {
+    console.log('Submitting task:', data);
     addTaskMutation.mutate(data);
   };
 
@@ -463,13 +506,13 @@ export const SprintDetailsPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Assignee
                   </label>
                   <select
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                    className="w-full px-2 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium text-xs"
                     {...register('assignee')}
                   >
                     <option value="">Unassigned</option>
@@ -489,14 +532,29 @@ export const SprintDetailsPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 truncate">
                     Estimated Hours
                   </label>
                   <input
                     type="number"
                     defaultValue={0}
-                    className="w-full px-3.5 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-955 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-2 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                     {...register('estimatedHours', {
+                      valueAsNumber: true,
+                      min: 0,
+                    })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 truncate">
+                    Story Points
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={0}
+                    className="w-full px-2 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    {...register('storyPoints', {
                       valueAsNumber: true,
                       min: 0,
                     })}

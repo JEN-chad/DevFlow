@@ -1,5 +1,6 @@
 import { Task } from '../models/Task.js';
 import { Project } from '../models/Project.js';
+import { Sprint } from '../models/Sprint.js';
 import { Activity } from '../models/Activity.js';
 import mongoose from 'mongoose';
 import { emitProjectEvent } from '../config/socket.js';
@@ -27,8 +28,39 @@ const logActivity = async (userId, projectId, action, metadata = {}) => {
 export const createTask = async (req, res) => {
   try {
     const { projectId } = req.params;
+    console.log('Received task payload:', req.body);
     const { title, description, status, priority, sprintId, assignee, estimatedHours, storyPoints } = req.body;
 
+    // 1. Validation checks
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Task title is required',
+      });
+    }
+
+    if (title.trim().length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Task title must be at least 3 characters',
+      });
+    }
+
+    if (estimatedHours !== undefined && (typeof estimatedHours !== 'number' || estimatedHours < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estimated hours must be a non-negative number',
+      });
+    }
+
+    if (storyPoints !== undefined && (typeof storyPoints !== 'number' || storyPoints < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Story points must be a non-negative number',
+      });
+    }
+
+    // 2. Project check
     const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({
@@ -37,6 +69,55 @@ export const createTask = async (req, res) => {
       });
     }
 
+    // 3. Project role check
+    let userRole = null;
+    if (project.owner.toString() === req.user._id.toString()) {
+      userRole = 'OWNER';
+    } else {
+      const member = project.members.find(
+        (m) => m.userId.toString() === req.user._id.toString()
+      );
+      if (member) {
+        userRole = member.role;
+      }
+    }
+
+    // System Owner override
+    if (!userRole && req.user.role === 'OWNER') {
+      userRole = 'OWNER';
+    }
+
+    if (!userRole || !['OWNER', 'SCRUM_MASTER', 'DEVELOPER'].includes(userRole)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: You do not have permission to create tasks in this project',
+      });
+    }
+
+    // 4. Sprint check
+    if (sprintId) {
+      if (!mongoose.isValidObjectId(sprintId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid sprint ID format',
+        });
+      }
+      const sprint = await Sprint.findById(sprintId);
+      if (!sprint) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sprint not found',
+        });
+      }
+      if (sprint.projectId.toString() !== projectId.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sprint does not belong to this project',
+        });
+      }
+    }
+
+    // 5. Create task
     const task = new Task({
       projectId,
       sprintId: sprintId || undefined,
@@ -51,6 +132,7 @@ export const createTask = async (req, res) => {
     });
 
     await task.save();
+    console.log('Created task:', task);
 
     // Trigger Notification for Assignee if assigned
     if (task.assignee) {

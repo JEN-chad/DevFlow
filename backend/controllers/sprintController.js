@@ -141,6 +141,7 @@ export const getSprintById = async (req, res) => {
 
     // Retrieve all tasks associated with this sprint
     const tasks = await Task.find({ sprintId: sprint._id }).populate('assignee', '_id username email avatar');
+    console.log('Sprint query tasks:', tasks);
 
     // Calculate metrics
     const totalTasks = tasks.length;
